@@ -1,19 +1,26 @@
 fun main() {
-//    val testLines = listOf("987654321111111", "811111111111119", "234234234234278", "818181911112111")
+    val banksJoltage = 12
+    val testLines = listOf("987654321111111", "811111111111119", "234234234234278", "818181911112111")
     val lines = readInput("Day3Input")
-    var sum = 0
+    var finalSum = 0L
     for (line in lines) {
         // iterate over line
-        var currentMax = 0
-        for (position in 0..line.length) {
-            for (othersPosition in position + 1..line.length - 1) {
-                val resultNumber = line[position].toString() + line[othersPosition]
-                if (resultNumber.toInt() > currentMax) {
-                    currentMax = resultNumber.toInt()
+        var numbersFound = 0
+        var lastNumberPosition = 0
+        var currentList = ""
+        while (numbersFound < banksJoltage) {
+            var currentMax = 0
+            for (position in lastNumberPosition..(line.length - banksJoltage + numbersFound)) {
+                if (line[position].toString().toInt() > currentMax) {
+                    currentMax = line[position].toString().toInt()
+                    lastNumberPosition = position + 1
                 }
             }
+            currentList += currentMax
+            numbersFound++
         }
-        sum += currentMax
+        // now we have numbers generated as lists
+        finalSum += currentList.toLong()
     }
-    println(sum)
+    println(finalSum)
 }
