@@ -1,37 +1,30 @@
 fun main() {
-    val testInput = listOf(
-        "3-5",
-        "10-14",
-        "16-20",
-        "12-18"
-    )
     val input = readInput("Day5Input1")
+
     val freshIngredients = mutableListOf<LongRange>()
-    input.map {
-        val fromTo = it.split("-")
-        freshIngredients.add(fromTo.first().toLong()..fromTo.last().toLong())
+    input.forEach { line ->
+        val (from, to) = line.split("-").map { it.toLong() }
+        freshIngredients.add(from..to)
     }
 
-    val testInput2 = listOf(
-        "1",
-        "5",
-        "8",
-        "11",
-        "17",
-        "32"
-    )
-    val input2 = readInput("Day5Input2")
+    freshIngredients.sortBy { it.start }
 
-    var freshCounter = 0
-    input2.map { indexToCheck ->
-        val longIndex = indexToCheck.toLong()
-        for (range in freshIngredients) {
-            if (longIndex in range) {
-                freshCounter++
-                break
-            }
+    var ingredientCounter = 0L
+
+    var currentStart = freshIngredients.first().start
+    var currentEnd = freshIngredients.first().last
+
+    for (range in freshIngredients.drop(1)) {
+        if (range.start > currentEnd + 1) {
+            ingredientCounter += currentEnd - currentStart + 1
+            currentStart = range.start
+            currentEnd = range.last
+        } else {
+            currentEnd = maxOf(currentEnd, range.last)
         }
     }
 
-    println(freshCounter)
+    ingredientCounter += currentEnd - currentStart + 1
+
+    println(ingredientCounter)
 }
