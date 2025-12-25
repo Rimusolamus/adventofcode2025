@@ -1,72 +1,63 @@
 fun main() {
     val input = readInput("Day7Input")
-    val testInput = listOf(
-        ".......S.......",
-        "...............",
-        ".......^.......",
-        "...............",
-        "......^.^......",
-        "...............",
-        ".....^.^.^.....",
-        "...............",
-        "....^.^...^....",
-        "...............",
-        "...^.^...^.^...",
-        "...............",
-        "..^...^.....^..",
-        "...............",
-        ".^.^.^.^.^...^.",
-        "..............."
-    )
     val matrix = input.toMutableList()
-    val x = matrix.first().indexOf("S")
+
+    val x = matrix.first().indexOf('S')
     val y = 0
 
-    for (i in matrix) {
-        println(i)
-    }
-    val splitters = mutableSetOf<Coordinate>()
+    val active = mutableMapOf<Coordinate, Long>()
+    active[Coordinate(x, y)] = 1L
 
-    val toProcess = mutableListOf(Coordinate(x, y))
-    while (toProcess.isNotEmpty()) {
-        val obstacle = drawPathUntilObstacle(toProcess.first(), matrix)
-        toProcess.removeAt(0)
-        if (!obstacle.isFinal) {
-            val obstacleCoordinates = Coordinate(obstacle.x, obstacle.y)
-            if (obstacleCoordinates in splitters)
-                continue
-            splitters.add(obstacleCoordinates)
-            val continueFromLeft = obstacle.copy(obstacle.x - 1, obstacle.y - 1)
-            val continueFromRight = obstacle.copy(obstacle.x + 1, obstacle.y - 1)
-            if (obstacle.x > 0) {
-                toProcess.add(continueFromLeft)
-            }
-            if (obstacle.x < matrix[0].length - 1) {
-                toProcess.add(continueFromRight)
-            }
+    var result = 0L
+
+    while (active.isNotEmpty()) {
+        val (coord, timelines) = active.entries.first()
+        active.remove(coord)
+
+        val obstacle = drawPathUntilObstacle(coord, matrix)
+
+        if (obstacle.isFinal) {
+            result += timelines
+            continue
+        }
+
+        val left = obstacle.copy(x = obstacle.x - 1, y = obstacle.y - 1)
+        val right = obstacle.copy(x = obstacle.x + 1, y = obstacle.y - 1)
+
+        if (obstacle.x > 0) {
+            active[left] = (active[left] ?: 0L) + timelines
+        }
+
+        if (obstacle.x < matrix[0].length - 1) {
+            active[right] = (active[right] ?: 0L) + timelines
         }
     }
+
+    println("Timelines: $result")
+
+    println("---------------------")
     for (i in matrix) {
         println(i)
     }
-
-    println("-------------------------")
-    println(splitters.size)
 }
 
-private fun drawPathUntilObstacle(coordinate: Coordinate, matrix: MutableList<String>): Coordinate {
+private fun drawPathUntilObstacle(
+    coordinate: Coordinate,
+    matrix: MutableList<String>
+): Coordinate {
     var y = coordinate.y
     while (true) {
-        if (matrix.getOrNull(y + 1)?.getOrNull(coordinate.x) != '^' && matrix.size != y + 1) {
-            val str = matrix[y + 1].toCharArray()
-            str[coordinate.x] = '|'
-            matrix[y + 1] = String(str)
-            y++
-        } else if (matrix.size == y + 1) {
-            return Coordinate(coordinate.x, y + 1, isFinal = true)
-        } else {
-            return Coordinate(coordinate.x, y + 1)
+        val nextY = y + 1
+        if (nextY >= matrix.size) {
+            return Coordinate(coordinate.x, nextY, isFinal = true)
         }
+        if (matrix[nextY][coordinate.x] == '^') {
+            return Coordinate(coordinate.x, nextY)
+        }
+        val str = matrix[nextY].toCharArray()
+        str[coordinate.x] = '|'
+        matrix[nextY] = String(str)
+        y++
     }
 }
 
