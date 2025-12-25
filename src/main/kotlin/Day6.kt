@@ -1,96 +1,44 @@
 fun main() {
-    val testLines = listOf(
-        "123 328  51 64  ",
-        " 45 64  387 23  ",
-        "  6 98  215 314 ",
-        "*   +   *   +   "
-    )
-    val lines = readInput("Day6Input")
+    val numbers = readInput("Day6Input")
 
-    val numbers = mutableListOf<String>()
-    for (line in lines) {
-        numbers.add(line)
-    }
+    val digitRows = numbers.dropLast(1)
+    val operatorRow = numbers.last()
 
-    var rowIndex = 0
     var action: ACTION? = null
     var result = 0L
-    val listOfReadyNumbers = mutableListOf<Long>()
+    val buffer = mutableListOf<Long>()
 
-    while (true) {
-        if (rowIndex == numbers.first().length) {
-            // we are out of the string, it's time to go home
-            if (action == ACTION.SUM) {
-                result += sumAll(listOfReadyNumbers)
-                listOfReadyNumbers.clear()
-            } else if (action == ACTION.MULTIPLY) {
-                result += multiplyAll(listOfReadyNumbers)
-                listOfReadyNumbers.clear()
-            }
-            println("result is: $result")
-            break
-        }
+    for (col in digitRows.first().indices) {
 
-        // on empty line we do calculation then reset everything
-        if (areAllCharsAreWhitespaces(numbers, rowIndex)) {
-            if (action == ACTION.SUM) {
-                result += sumAll(listOfReadyNumbers)
-                listOfReadyNumbers.clear()
-            } else if (action == ACTION.MULTIPLY) {
-                result += multiplyAll(listOfReadyNumbers)
-                listOfReadyNumbers.clear()
-            }
-            rowIndex++
+        if (digitRows.all { it.getOrNull(col)?.isWhitespace() == true }) {
+            result += apply(action, buffer)
+            buffer.clear()
             continue
         }
 
-        // if we found new action we change it
-        if (numbers.last().getOrNull(rowIndex) == '*') {
-            action = ACTION.MULTIPLY
-        }
-        if (numbers.last().getOrNull(rowIndex) == '+') {
-            action = ACTION.SUM
+        when (operatorRow.getOrNull(col)) {
+            '+' -> action = ACTION.SUM
+            '*' -> action = ACTION.MULTIPLY
         }
 
-        var number = ""
+        val number = digitRows
+            .mapNotNull { it.getOrNull(col)?.takeIf { ch -> !ch.isWhitespace() } }
+            .joinToString("")
 
-        for (charIndex in 0..numbers.size - 2) {
-            if (!numbers[charIndex][rowIndex].isWhitespace()) {
-                number = number + numbers[charIndex][rowIndex].toString()
-            }
+        if (number.isNotEmpty()) {
+            buffer.add(number.toLong())
         }
-        if (number != "") {
-            listOfReadyNumbers.add(number.toLong())
-        }
-
-        rowIndex++
     }
+
+    result += apply(action, buffer)
+    println(result)
 }
 
-private fun sumAll(listOfReadyNumbers: List<Long>): Long {
-    var res = 0L
-    for (i in listOfReadyNumbers) {
-        res += i
+private fun apply(action: ACTION?, values: List<Long>): Long =
+    when (action) {
+        ACTION.SUM -> values.sum()
+        ACTION.MULTIPLY -> values.fold(1L, Long::times)
+        else -> 0
     }
-    return res
-}
 
-private fun multiplyAll(listOfReadyNumbers: List<Long>): Long {
-    var res = 1L
-    for (i in listOfReadyNumbers) {
-        res *= i
-    }
-    return res
-}
-
-private fun areAllCharsAreWhitespaces(numbers: MutableList<String>, rowIndex: Int): Boolean {
-    var counter = 0
-    for (i in 0..numbers.size-1) {
-        if (numbers[i].getOrNull(rowIndex)?.isWhitespace() == true) counter++
-    }
-    return counter == numbers.size
-}
-
-private enum class ACTION {
-    SUM, MULTIPLY
-}
+private enum class ACTION { SUM, MULTIPLY }
