@@ -18,19 +18,24 @@ fun main() {
         ".^.^.^.^.^...^.",
         "..............."
     )
-    val matrix = testInput.toMutableList()
+    val matrix = input.toMutableList()
     val x = matrix.first().indexOf("S")
     val y = 0
 
     for (i in matrix) {
         println(i)
     }
+    val splitters = mutableSetOf<Coordinate>()
 
     val toProcess = mutableListOf(Coordinate(x, y))
     while (toProcess.isNotEmpty()) {
         val obstacle = drawPathUntilObstacle(toProcess.first(), matrix)
         toProcess.removeAt(0)
         if (!obstacle.isFinal) {
+            val obstacleCoordinates = Coordinate(obstacle.x, obstacle.y)
+            if (obstacleCoordinates in splitters)
+                continue
+            splitters.add(obstacleCoordinates)
             val continueFromLeft = obstacle.copy(obstacle.x - 1, obstacle.y - 1)
             val continueFromRight = obstacle.copy(obstacle.x + 1, obstacle.y - 1)
             if (obstacle.x > 0) {
@@ -46,7 +51,7 @@ fun main() {
     }
 
     println("-------------------------")
-    println("in the bottom we got: ${matrix.last().count { it == '|' }}")
+    println(splitters.size)
 }
 
 private fun drawPathUntilObstacle(coordinate: Coordinate, matrix: MutableList<String>): Coordinate {
