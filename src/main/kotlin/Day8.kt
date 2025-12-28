@@ -21,97 +21,50 @@ fun main() {
         "984,92,344",
         "425,690,689"
     )
+
     val input = readInput("Day8Input")
-    val boxes = input.map {
-        it.split(",").toBox()
-    }
+    val boxes = input.map { it.split(",").toBox() }
+
     val matches = mutableListOf<Match>()
-    for (boxIndex in boxes.indices) {
-        for (matchBox in boxes.indices) {
-            if (boxIndex > matchBox) {
-                val match = Match(
-                    Pair(
-                        boxes[boxIndex],
-                        boxes[matchBox]
-                    ),
-                    distance = calculateDistance(boxes[boxIndex], boxes[matchBox])
-                )
-                matches.add(match)
-            }
+    for (i in boxes.indices) {
+        for (j in 0 until i) {
+            matches.add(Match(boxes[i], boxes[j], calculateDistance(boxes[i], boxes[j])))
         }
     }
     matches.sortBy { it.distance }
-    var matchCount = 0
-    val chains = mutableListOf<MutableList<Box>>()
+
+    var lastPair: Pair<Box, Box>? = null
+    val chains = mutableListOf<MutableSet<Box>>()
+
     for (match in matches) {
-        if (matchCount == 1000) {
-            break
-        }
-        val chainIndex = getChainIndexByMatch(chains, match)
-        if (chainIndex == -666) {
-            // both boxes are in chain go next
-            matchCount++
-            continue
-        }
-        if (chainIndex.isNonNegative()) {
-            if (match.pair.first in chains[chainIndex]) {
-                val secondBoxIndex = getChainIndexByBox(chains, match.pair.second)
-                if (secondBoxIndex.isNonNegative()) {
-                    val firstIndex = minOf(chainIndex, secondBoxIndex)
-                    val secondIndex = maxOf(chainIndex, secondBoxIndex)
-                    for (box in chains[secondIndex]) {
-                        chains[firstIndex].add(box)
-                    }
-                    chains.removeAt(secondIndex)
-                } else {
-                    chains[chainIndex].add(match.pair.second)
-                }
-            } else {
-                val secondBoxIndex = getChainIndexByBox(chains, match.pair.first)
-                if (secondBoxIndex.isNonNegative()) {
-                    val firstIndex = minOf(chainIndex, secondBoxIndex)
-                    val secondIndex = maxOf(chainIndex, secondBoxIndex)
-                    for (box in chains[secondIndex]) {
-                        chains[firstIndex].add(box)
-                    }
-                    chains.removeAt(secondIndex)
-                } else {
-                    chains[chainIndex].add(match.pair.first)
-                }
+        if (chains.size == 1 && chains[0].size == boxes.size) break
+
+        val chainA = chains.find { match.first in it }
+        val chainB = chains.find { match.second in it }
+
+        when {
+            chainA != null && chainA === chainB -> continue
+
+            chainA != null && chainB != null -> {
+                chainA.addAll(chainB)
+                chains.remove(chainB)
             }
-        } else {
-            chains.add(mutableListOf(match.pair.first, match.pair.second))
+
+            chainA != null -> chainA.add(match.second)
+            chainB != null -> chainB.add(match.first)
+
+            else -> chains.add(mutableSetOf(match.first, match.second))
         }
-        matchCount++
+
+        lastPair = match.first to match.second
     }
 
-    chains.sortByDescending { it.size }
-    println(chains[0].size * chains[1].size * chains[2].size)
+    println(lastPair!!.first.x.toLong() * lastPair.second.x.toLong())
 }
 
-private fun getChainIndexByBox(chains: List<List<Box>>, box: Box): Int {
-    for (chain in chains) {
-        if (box in chain) {
-            return chains.indexOf(chain)
-        }
-    }
-    return -1
-}
-
-private fun getChainIndexByMatch(chains: List<List<Box>>, match: Match): Int {
-    for (chain in chains) {
-        if (match.pair.first in chain && match.pair.second in chain) {
-            return -666
-        } else if (match.pair.first in chain || match.pair.second in chain) {
-            return chains.indexOf(chain)
-        }
-    }
-    return -1
-}
-
-// there also should be sqrt but idc
-private fun calculateDistance(boxA: Box, boxB: Box): Long {
-    return (boxA.x - boxB.x).sqr() + (boxA.y - boxB.y).sqr() + (boxA.z - boxB.z).sqr()
+private fun calculateDistance(a: Box, b: Box): Long {
+    fun Int.sqr() = this.toLong() * this.toLong()
+    return (a.x - b.x).sqr() + (a.y - b.y).sqr() + (a.z - b.z).sqr()
 }
 
 private data class Box(
@@ -121,22 +74,9 @@ private data class Box(
 )
 
 private data class Match(
-    val pair: Pair<Box, Box>,
+    val first: Box,
+    val second: Box,
     val distance: Long
 )
 
-private fun List<String>.toBox(): Box {
-    return if (this.size == 3) {
-        Box(this[0].toInt(), this[1].toInt(), this[2].toInt())
-    } else {
-        Box(0, 0, 0) // shouldn't happen
-    }
-}
-
-private fun Int.sqr(): Long {
-    return this.toLong() * this.toLong()
-}
-
-private fun Int.isNonNegative(): Boolean {
-    return this >= 0
-}
+private fun List<String>.toBox() = Box(this[0].toInt(), this[1].toInt(), this[2].toInt())
